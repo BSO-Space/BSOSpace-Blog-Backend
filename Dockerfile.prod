@@ -1,0 +1,35 @@
+# Stage 1: Install dependencies and build with Bun for production
+FROM oven/bun:latest as builder
+
+# Set working directory
+WORKDIR /app
+
+# Copy only package manager files to install dependencies
+COPY bun.lockb package.json ./
+
+# Install production dependencies
+RUN bun install --production
+
+# Copy the rest of the source code
+COPY . .
+
+# Run Prisma generate (if you're using Prisma)
+RUN bun prisma generate
+
+# Stage 2: Production ready container
+FROM oven/bun:latest as production
+
+# Set working directory
+WORKDIR /app
+
+# Copy the built app from the builder stage
+COPY --from=builder /app /app
+
+# Set environment to production
+ENV NODE_ENV=production
+
+# Expose the production port
+EXPOSE 3000
+
+# Run the application in production mode
+CMD ["bun", "start"]
